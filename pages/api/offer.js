@@ -5,16 +5,18 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
+    // DÔLEŽITÉ: konverzia \n -> reálne nové riadky
+    const privateKey = (process.env.GOOGLE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+
     const auth = new JWT({
       email: process.env.GOOGLE_SERVICE_EMAIL,
-      key: process.env.GOOGLE_PRIVATE_KEY,          // multiline OK
+      key: privateKey, // tu ide už opravený kľúč
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
     const doc = new GoogleSpreadsheet(process.env.SHEET_ID, auth);
     await doc.loadInfo();
 
-    // použijeme list "Quotes" (ak neexistuje, vytvoríme so základnými hlavičkami)
     let sheet = doc.sheetsByTitle["Quotes"];
     if (!sheet) {
       sheet = await doc.addSheet({
