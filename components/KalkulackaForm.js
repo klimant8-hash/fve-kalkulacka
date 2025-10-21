@@ -1,20 +1,19 @@
 import { useState } from "react";
-import { appendOffer } from "../lib/sheets";
 
-export default function KalkulackaForm({ user }){
-  const [spotreba,setSpotreba]=useState("");
-  const [faza,setFaza]=useState("1F");
-  const [menic,setMenic]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [vysledok,setVysledok]=useState(null);
-  const [error,setError]=useState("");
+export default function KalkulackaForm({ user }) {
+  const [spotreba, setSpotreba] = useState("");
+  const [faza, setFaza] = useState("1F");
+  const [menic, setMenic] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [vysledok, setVysledok] = useState(null);
+  const [error, setError] = useState("");
 
-  async function handleCompute(e){
+  async function handleCompute(e) {
     e.preventDefault();
     setError(""); setLoading(true);
-    try{
+    try {
       const kWh = Number(spotreba || 0);
-      const cena = (kWh) * (faza === "3F" ? 0.23 : 0.19); // placeholder
+      const cena = (kWh) * (faza === "3F" ? 0.23 : 0.19); // dočasný výpočet
       const data = {
         Datum: new Date().toISOString(),
         Obchodnik: user,
@@ -23,11 +22,19 @@ export default function KalkulackaForm({ user }){
         Menic: menic || "-",
         CenaSpolu: cena.toFixed(2)
       };
-      await appendOffer(data);
+
+      const res = await fetch("/api/offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "API error");
+
       setVysledok(data);
-    }catch(err){
+    } catch (err) {
       setError(String(err));
-    }finally{
+    } finally {
       setLoading(false);
     }
   }
@@ -52,7 +59,7 @@ export default function KalkulackaForm({ user }){
         </button>
       </form>
 
-      {error && <p style={{color:"crimson"}}>{error}</p>}
+      {error && <p style={{color:'crimson'}}>{error}</p>}
       {vysledok && <pre>{JSON.stringify(vysledok, null, 2)}</pre>}
       <style jsx>{`
         .card { border:1px solid #e5e5e5; border-radius:12px; padding:16px; max-width:540px; }
